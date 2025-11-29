@@ -1,0 +1,374 @@
+[
+  {
+    "filtered": false,
+    "conversationId": "T57IAET5UAcfkAO6HFUF",
+    "messageId": "7PY8ohLs23mNOH8xXJr6",
+    "senderId": "hiAf8r28RmfnppmYBpvxQwTroNI2",
+    "senderRole": "patient",
+    "content": "Oi posso comer doce?",
+    "type": "text",
+    "attachments": [],
+    "patientId": "hiAf8r28RmfnppmYBpvxQwTroNI2",
+    "prescriberId": "6yooHer7ZgYOcYe0JHkXHLnWBq83",
+    "timestamp": "2025-11-28T03:29:00.000Z",
+    "isTest": false,
+    "context": "\nVocê é um assistente nutricional inteligente do NutriBuddy.\n\nPACIENTE: Paciente\n\nDIETA PRESCRITA:\nDieta não disponível\n\nMACRONUTRIENTES DIÁRIOS:\n- Proteínas: N/Ag\n- Carboidratos: N/Ag\n- Gorduras: N/Ag\n- Calorias: N/Akcal\n\nÚLTIMAS MENSAGENS:\n\n\nMENSAGEM ATUAL: \"Oi posso comer doce?\"\n\nINSTRUÇÕES:\n1. Responda BASEADO NA DIETA SALVA do paciente\n2. Foque em macronutrientes e aderência ao plano\n3. Se o alimento perguntado ESTÁ na dieta → Confirme e dê detalhes\n4. Se NÃO está na dieta → Explique por quê e sugira alternativas da dieta\n5. Seja específico sobre quantidades e horários\n6. Incentive aderência ao plano prescrito\n7. Se for urgência médica → Marque urgencia: \"alta\"\n\nResponda APENAS em JSON válido:\n{\n  \"urgencia\": \"baixa|media|alta\",\n  \"sentimento\": \"positivo|neutro|negativo|preocupado\",\n  \"categoria\": \"duvida_alimentacao|relato_progresso|dificuldade|urgencia_saude\",\n  \"deve_responder\": true,\n  \"resposta\": \"sua resposta aqui (máximo 200 palavras)\"\n}\n",
+    "dietPlan": {
+      "success": true,
+      "data": {
+        "id": "IIRYgnpLztPl7w5Lr7gk",
+        "name": "Plano Alimentar",
+        "description": "Plano de 1790 kcal/dia",
+        "meals": [
+          {
+            "time": "07:00",
+            "name": "Em Jejum",
+            "foods": [
+              {
+                "name": "nutrata de creatina",
+                "amount": "3,0g",
+                "unit": "",
+                "calories": 0.1,
+                "protein": 3,
+                "carbs": 0,
+                "fats": 0
+              },
+              {
+                "name": "colher chá (5g) de glutamine (universal)",
+                "amount": "5,0g",
+                "unit": "",
+                "calories": 20,
+                "protein": 5,
+                "carbs": 0,
+                "fats": 0
+              },
+              {
+                "name": "4 x 100 ml de água- 100 ml",
+                "amount": "400,0g",
+                "unit": "",
+                "calories": 4,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              }
+            ],
+            "macros": {
+              "calories": 24.1,
+              "protein": 8,
+              "carbs": 0,
+              "fats": 0
+            }
+          },
+          {
+            "time": "07:30",
+            "name": "Café da Manhã",
+            "foods": [
+              {
+                "name": "colher de chá de manteiga ghee",
+                "amount": "5,0g",
+                "unit": "",
+                "calories": 45,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 4.6
+              },
+              {
+                "name": "3 x 1 unidade de ovo caipira",
+                "amount": "150,0g",
+                "unit": "",
+                "calories": 228,
+                "protein": 21.6,
+                "carbs": 2.7,
+                "fats": 14.7
+              },
+              {
+                "name": "4 x 100 ml de água- 100 ml",
+                "amount": "400,0g",
+                "unit": "",
+                "calories": 4,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              },
+              {
+                "name": "xícara de chá de café, chá",
+                "amount": "90,0g",
+                "unit": "",
+                "calories": 1.8,
+                "protein": 0.09,
+                "carbs": 0.31,
+                "fats": 0
+              },
+              {
+                "name": "2 x 1 fatia de pão 100% integral wickbold (do forno)",
+                "amount": "66,6g",
+                "unit": "",
+                "calories": 154,
+                "protein": 9.2,
+                "carbs": 22,
+                "fats": 2.8
+              },
+              {
+                "name": "unidade de banana, prata, crua",
+                "amount": "70,0g",
+                "unit": "",
+                "calories": 68.77,
+                "protein": 0.89,
+                "carbs": 18.17,
+                "fats": 0.05
+              },
+              {
+                "name": "a gosto de ervas, condimentos e temperos",
+                "amount": "5,0g",
+                "unit": "",
+                "calories": 1,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              }
+            ],
+            "macros": {
+              "calories": 502.57,
+              "protein": 31.78,
+              "carbs": 43.18,
+              "fats": 22.15
+            }
+          },
+          {
+            "time": "10:00",
+            "name": "Colação",
+            "foods": [
+              {
+                "name": "4 x 100 ml de água- 100 ml",
+                "amount": "400,0g",
+                "unit": "",
+                "calories": 4,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              }
+            ],
+            "macros": {
+              "calories": 4,
+              "protein": 0,
+              "carbs": 0,
+              "fats": 0
+            }
+          },
+          {
+            "time": "12:00",
+            "name": "Almoço",
+            "foods": [
+              {
+                "name": "2 x pedaço de carne de frango, coxa/sobre (s/osso s/pele)",
+                "amount": "200,0g",
+                "unit": "",
+                "calories": 206,
+                "protein": 33.58,
+                "carbs": 0,
+                "fats": 8.1
+              },
+              {
+                "name": "xícara de legumes cozidos",
+                "amount": "56,0g",
+                "unit": "",
+                "calories": 7,
+                "protein": 0.78,
+                "carbs": 1.24,
+                "fats": 0
+              },
+              {
+                "name": "ramo de brócolis, cozido",
+                "amount": "38,0g",
+                "unit": "",
+                "calories": 9.36,
+                "protein": 0.81,
+                "carbs": 1.66,
+                "fats": 0.17
+              },
+              {
+                "name": "porção de salada verde mista",
+                "amount": "80,0g",
+                "unit": "",
+                "calories": 10.4,
+                "protein": 0.81,
+                "carbs": 1.77,
+                "fats": 0.1
+              },
+              {
+                "name": "4 x 50g de batata doce cozida ou assada",
+                "amount": "200,0g",
+                "unit": "",
+                "calories": 152,
+                "protein": 1.2,
+                "carbs": 35.44,
+                "fats": 0.28
+              },
+              {
+                "name": "5 x 100 ml de água- 100 ml",
+                "amount": "500,0g",
+                "unit": "",
+                "calories": 5,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              },
+              {
+                "name": "colher de sopa de # azeite de oliva extra virgem",
+                "amount": "13,0g",
+                "unit": "",
+                "calories": 108,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 12
+              }
+            ],
+            "macros": {
+              "calories": 497.76,
+              "protein": 37.18,
+              "carbs": 40.11,
+              "fats": 20.65
+            }
+          },
+          {
+            "time": "15:30",
+            "name": "Lanche da Tarde",
+            "foods": [
+              {
+                "name": "colher de sopa de granola",
+                "amount": "22,5g",
+                "unit": "",
+                "calories": 104.4,
+                "protein": 2.29,
+                "carbs": 15.03,
+                "fats": 3.92
+              },
+              {
+                "name": "4 x 100 ml de água- 100 ml",
+                "amount": "400,0g",
+                "unit": "",
+                "calories": 4,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              },
+              {
+                "name": "dose de best whey iso - atlhetica nutrtion",
+                "amount": "24,0g",
+                "unit": "",
+                "calories": 87,
+                "protein": 20,
+                "carbs": 1.8,
+                "fats": 0
+              },
+              {
+                "name": "unidade de banana, prata, crua",
+                "amount": "70,0g",
+                "unit": "",
+                "calories": 68.77,
+                "protein": 0.89,
+                "carbs": 18.17,
+                "fats": 0.05
+              }
+            ],
+            "macros": {
+              "calories": 264.17,
+              "protein": 23.18,
+              "carbs": 35,
+              "fats": 3.97
+            }
+          },
+          {
+            "time": "20:30",
+            "name": "Jantar",
+            "foods": [
+              {
+                "name": "xícara de legumes cozidos",
+                "amount": "56,0g",
+                "unit": "",
+                "calories": 7,
+                "protein": 0.78,
+                "carbs": 1.24,
+                "fats": 0
+              },
+              {
+                "name": "5 x 100 ml de água- 100 ml",
+                "amount": "500,0g",
+                "unit": "",
+                "calories": 5,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0
+              },
+              {
+                "name": "2 x pedaço de carne de frango, coxa/sobre (s/osso s/pele)",
+                "amount": "200,0g",
+                "unit": "",
+                "calories": 206,
+                "protein": 33.58,
+                "carbs": 0,
+                "fats": 8.1
+              },
+              {
+                "name": "ramo de brócolis, cozido",
+                "amount": "38,0g",
+                "unit": "",
+                "calories": 9.36,
+                "protein": 0.81,
+                "carbs": 1.66,
+                "fats": 0.17
+              },
+              {
+                "name": "colher de sopa de # azeite de oliva extra virgem",
+                "amount": "13,0g",
+                "unit": "",
+                "calories": 108,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 12
+              },
+              {
+                "name": "porção de salada verde mista",
+                "amount": "80,0g",
+                "unit": "",
+                "calories": 10.4,
+                "protein": 0.81,
+                "carbs": 1.77,
+                "fats": 0.1
+              },
+              {
+                "name": "4 x 50g de batata doce cozida ou assada",
+                "amount": "200,0g",
+                "unit": "",
+                "calories": 152,
+                "protein": 1.2,
+                "carbs": 35.44,
+                "fats": 0.28
+              }
+            ],
+            "macros": {
+              "calories": 497.76,
+              "protein": 37.18,
+              "carbs": 40.11,
+              "fats": 20.65
+            }
+          }
+        ],
+        "macros": {
+          "protein": 137,
+          "carbs": 158,
+          "fats": 67,
+          "calories": 1790
+        },
+        "createdAt": {
+          "_seconds": 1763722178,
+          "_nanoseconds": 367000000
+        },
+        "updatedAt": {
+          "_seconds": 1763722178,
+          "_nanoseconds": 368000000
+        }
+      }
+    }
+  }
+]

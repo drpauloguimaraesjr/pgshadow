@@ -1,0 +1,171 @@
+{
+  "name": "PGshadow - Integração API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pgshadow-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "pgshadow-integration"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.action}}",
+              "operation": "equals",
+              "value2": "search"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "É Busca?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PGSHADOW_URL}}/api/trpc/api.search",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "input",
+              "value": "={{JSON.stringify({query: $json.body.query, userId: $json.body.userId, limit: $json.body.limit || 10})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3",
+      "name": "Buscar no PGshadow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PGSHADOW_URL}}/api/trpc/api.addEntry",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{$json.body.userId}}"
+            },
+            {
+              "name": "question",
+              "value": "={{$json.body.question}}"
+            },
+            {
+              "name": "answer",
+              "value": "={{$json.body.answer}}"
+            },
+            {
+              "name": "category",
+              "value": "={{$json.body.category}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Adicionar Entrada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "5",
+      "name": "Responder Busca",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "6",
+      "name": "Responder Adicionar",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "É Busca?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Busca?": {
+      "main": [
+        [
+          {
+            "node": "Buscar no PGshadow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adicionar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar no PGshadow": {
+      "main": [
+        [
+          {
+            "node": "Responder Busca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adicionar Entrada": {
+      "main": [
+        [
+          {
+            "node": "Responder Adicionar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

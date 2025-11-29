@@ -1,0 +1,9 @@
+{
+  "name": "8. Parse Análise IA (ADAPTADO)",
+  "type": "n8n-nodes-base.code",
+  "typeVersion": 2,
+  "position": [-752, -240],
+  "parameters": {
+    "jsCode": "// Parse resposta da IA via HTTP Request\nconst currentItem = $('6. Construir Contexto IA').first().json;\nconst httpResponse = $input.first().json;\n\n// Extrair conteúdo da resposta OpenAI\nconst aiResponse = httpResponse.choices?.[0]?.message?.content || '{}';\n\nconsole.log('=== RESPOSTA IA (HTTP) ===');\nconsole.log(aiResponse);\n\nlet parsed;\ntry {\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('JSON não encontrado');\n  }\n} catch (error) {\n  console.error('Erro ao fazer parse:', error);\n  parsed = {\n    urgencia: 'baixa',\n    sentimento: 'neutro',\n    categoria: 'duvida_alimentacao',\n    deve_responder: true,\n    resposta: aiResponse\n  };\n}\n\nreturn {\n  json: {\n    ...currentItem,\n    urgencia: parsed.urgencia || 'baixa',\n    sentimento: parsed.sentimento || 'neutro',\n    categoria: parsed.categoria || 'duvida_alimentacao',\n    deve_responder: parsed.deve_responder !== false,\n    resposta: parsed.resposta || aiResponse\n  }\n};"
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "name": "Chat IA - NutriBuddy (com PGshadow)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutribuddy-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Recebe Mensagem",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PGSHADOW_URL}}/api/trpc/api.search",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "input",
+              "value": "={{JSON.stringify({query: $json.body.content, userId: $json.body.prescriberId, limit: 3})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Buscar Conhecimento PGshadow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construir contexto com conhecimento do PGshadow\nconst message = $input.first().json.body;\nconst knowledge = $input.all()[1]?.json?.result?.data || [];\n\nlet knowledgeContext = \"\";\nif (knowledge.length > 0) {\n  knowledgeContext = \"\\n\\n=== CONSULTAS SIMILARES SUAS ===\";\n  knowledge.forEach((k, i) => {\n    knowledgeContext += `\\n\\n${i+1}. P: ${k.question}\\nR: ${k.answer}`;\n  });\n}\n\nconst context = `Você responde dúvidas de pacientes sobre nutrição.\n\nPACIENTE: ${message.patientName}\nDIETA PRESCRITA: ${message.dietInfo || 'Não disponível'}\n${knowledgeContext}\n\nMENSAGEM ATUAL: \"${message.content}\"\n\nResponda de forma direta (máximo 100 palavras), natural e empática.`;\n\nreturn { context };"
+      },
+      "id": "3",
+      "name": "Construir Contexto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "={{$json.context}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Análise IA (OpenAI)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [850, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{JSON.stringify({success: true, response: $json.message.content})}}",
+        "options": {}
+      },
+      "id": "5",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Recebe Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Buscar Conhecimento PGshadow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Conhecimento PGshadow": {
+      "main": [
+        [
+          {
+            "node": "Construir Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir Contexto": {
+      "main": [
+        [
+          {
+            "node": "Análise IA (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Análise IA (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

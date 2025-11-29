@@ -1,0 +1,1736 @@
+{
+  "name": "🚀 Chat IA - NutriBuddy (PRODUÇÃO - v4 com Base de Conhecimento)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutribuddy-chat-producao",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fd58c132-f7a1-40fa-9261-73032982fc2e",
+      "name": "Webhook: Nova Mensagem",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2512,
+        -368
+      ],
+      "webhookId": "nutribuddy-chat-handler"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🚀 AMBIENTE DE PRODUÇÃO - ESTÁVEL\n// Logs otimizados\n\nconst body = $input.first().json.body || $input.first().json;\n\nconsole.log(\"🚀 [PRODUÇÃO] Processando mensagem:\", body.conversationId);\n\n// Validar campos obrigatórios\nconst required = [\"conversationId\", \"messageId\", \"senderRole\", \"content\"];\nconst missing = required.filter(field => !body[field]);\n\nif (missing.length > 0) {\n  console.error(\"❌ Campos faltando:\", missing);\n  throw new Error(`Campos faltando: ${missing.join(\", \")}`);\n}\n\n// IMPORTANTE: Processar APENAS mensagens de PACIENTES\nif (body.senderRole !== \"patient\") {\n  console.log(\"🚫 Filtrado: Mensagem do prescritor\");\n  return {\n    json: {\n      filtered: true,\n      reason: \"Mensagem do prescritor\",\n      conversationId: body.conversationId\n    }\n  };\n}\n\nconsole.log(\"✅ Processando mensagem do paciente\");\n\n// Retornar dados estruturados\nreturn {\n  json: {\n    filtered: false,\n    conversationId: String(body.conversationId).trim(),\n    messageId: String(body.messageId).trim(),\n    senderId: body.senderId || body.patientId,\n    senderRole: body.senderRole,\n    content: String(body.content).trim(),\n    type: body.type || \"text\",\n    attachments: body.attachments || [],\n    patientId: body.patientId || body.senderId,\n    prescriberId: body.prescriberId,\n    timestamp: body.timestamp || new Date().toISOString(),\n    isTest: body.isTest || false\n  }\n};"
+      },
+      "id": "3f9022b2-c4d4-482d-be2e-397042b8989c",
+      "name": "1. Validar e Processar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2304,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "caa174a2-ef1b-45ff-a257-17d5250f2234",
+              "leftValue": "={{ $json.filtered === true || $json.filtered === 'true' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "85ce9ed1-c8ea-4c2e-9c7e-ab76117354fa",
+      "name": "2. Foi Filtrado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, filtered: true, reason: $json.reason } }}",
+        "options": {}
+      },
+      "id": "fadd2641-f862-4e29-a0cc-a06bb6cf5e27",
+      "name": "Responder: Filtrado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -2064,
+        -1488
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $('1. Validar e Processar' ).first().json.conversationId }}\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4dbda1fe-e25e-46ea-b3f2-a39dda995733",
+      "name": "3. Buscar Conversa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1872,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $('1. Validar e Processar' ).first().json.conversationId }}/messages?limit=10\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7f6717dc-1c7e-4e60-9aeb-6aad1776e0b1",
+      "name": "4. Buscar Histórico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1632,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/patients/{{ $('1. Validar e Processar' ).first().json.patientId }}/diet\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6829151-45ef-4d59-a847-71979de81c48",
+      "name": "5. Buscar Dieta do Paciente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1408,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dados da mensagem\nconst currentItem = $('1. Validar e Processar').first().json;\nconst conversation = $('3. Buscar Conversa').first().json;\nconst history = $('4. Buscar Histórico').first().json.messages || [];\nconst dietPlan = $('5. Buscar Dieta do Paciente').first().json || {};\n\n// NOVO: Buscar base de conhecimento\nconst knowledgeBase = $('4b. Buscar Base de Conhecimento').first().json.results || [];\n\n// Histórico formatado\nconst formattedHistory = history\n  .slice(-5)\n  .map(msg => `${msg.senderRole === 'patient' ? 'Paciente' : 'Você'}: ${msg.content}`)\n  .join('\\n');\n\n// Formatar dieta\nconst dietInfo = dietPlan.meals ? \n  dietPlan.meals.map(meal => \n    `${meal.name} (${meal.time}): ${meal.foods.map(f => f.name).join(', ')}`\n  ).join('\\n') : \n  'Sem dieta cadastrada';\n\nconst hasDiet = dietPlan.meals && dietPlan.meals.length > 0;\n\n// NOVO: Formatar consultas de referência\nconst referenceConsults = knowledgeBase.length > 0 ?\n  knowledgeBase.map(kb => \n    `P: \"${kb.pergunta}\"\\nR: \"${kb.resposta}\"`\n  ).join('\\n\\n') :\n  'Nenhuma consulta similar encontrada';\n\n// PROMPT COM BASE DE CONHECIMENTO\nconst context = `Você é nutricionista assistente do ${conversation.patientName || 'paciente'}.\n\nDIETA ATUAL:\n${dietInfo}\n\nMETAS DIÁRIAS: ${dietPlan.macros?.protein || 0}g proteína, ${dietPlan.macros?.carbs || 0}g carbo, ${dietPlan.macros?.fats || 0}g gordura, ${dietPlan.macros?.calories || 0}kcal\n\nCONSULTAS ANTERIORES SIMILARES (USE COMO REFERÊNCIA):\n${referenceConsults}\n\nCONVERSA RECENTE:\n${formattedHistory || 'Primeira mensagem'}\n\nMENSAGEM ATUAL: \"${currentItem.content}\"\n\nINSTRUÇÕES:\n- Use as consultas anteriores como referência para manter consistência\n- Se houver consulta similar, adapte a resposta mantendo o mesmo estilo\n- Responda como nutricionista (não mencione que é IA)\n- Seja direto e conciso (máximo 100 palavras)\n- ${hasDiet ? 'Se perguntar sobre alimento: diga se está na dieta e porquê' : 'Informe que ainda não tem dieta cadastrada'}\n- Se for urgência médica: marque urgencia \"alta\"\n- Máximo 1 emoji\n\nRESPONDA APENAS EM JSON:\n{\n  \"urgencia\": \"baixa|media|alta\",\n  \"sentimento\": \"positivo|neutro|negativo\",\n  \"categoria\": \"duvida_alimentacao|relato_progresso|dificuldade|urgencia_saude\",\n  \"deve_responder\": true,\n  \"resposta\": \"sua resposta direta aqui\"\n}`;\n\nreturn {\n  json: {\n    ...currentItem,\n    context,\n    patientName: conversation.patientName,\n    dietPlan,\n    hasDiet,\n    knowledgeBaseUsed: knowledgeBase.length > 0\n  }\n};"
+      },
+      "id": "850753bb-3692-4611-8e31-06a5eb4c24fe",
+      "name": "6. Construir Contexto IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.context }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.7
+        }
+      },
+      "id": "87bff188-3ccf-4ff2-9d51-28d982cfcc0e",
+      "name": "7. Análise IA (OpenAI)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1040,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse resposta da IA\nconst currentItem = $('6. Construir Contexto IA').first().json;\nconst aiResponse = $input.first().json.message?.content || $input.first().json.text || '{}';\n\nconsole.log('=== RESPOSTA IA ===');\nconsole.log(aiResponse);\n\nlet parsed;\ntry {\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('JSON não encontrado');\n  }\n} catch (error) {\n  console.error('Erro ao fazer parse:', error);\n  parsed = {\n    urgencia: 'baixa',\n    sentimento: 'neutro',\n    categoria: 'duvida_alimentacao',\n    deve_responder: true,\n    resposta: aiResponse\n  };\n}\n\nreturn {\n  json: {\n    ...currentItem,\n    urgencia: parsed.urgencia || 'baixa',\n    sentimento: parsed.sentimento || 'neutro',\n    categoria: parsed.categoria || 'duvida_alimentacao',\n    deve_responder: parsed.deve_responder !== false,\n    resposta: parsed.resposta || aiResponse\n  }\n};"
+      },
+      "id": "ff9460fb-6f42-44dc-9c68-3bf0d65ea1e1",
+      "name": "8. Parse Análise IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "99b4b2d4-2840-4905-8650-d17c0ef2409e",
+              "leftValue": "={{ $json.deve_responder }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "04feca70-baf9-4766-b143-72c94073becf",
+      "name": "9. Deve Responder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "senderId",
+              "value": "={{ $json.prescriberId }}"
+            },
+            {
+              "name": "senderRole",
+              "value": "prescriber"
+            },
+            {
+              "name": "content",
+              "value": "={{ $json.resposta }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "isAiGenerated",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "944b5c5f-5f8d-4602-a270-77d0d2f154b4",
+      "name": "10. Enviar Auto-resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -304,
+        -368
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b93b97e2-4371-4585-ac3d-0d5a77ad83ee",
+      "name": "Não Responder",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, processed: true, urgencia: $json.urgencia, categoria: $json.categoria, respondeu: $json.deve_responder } }}",
+        "options": {}
+      },
+      "id": "74097e15-6df9-42c4-a490-194457ef2bb0",
+      "name": "12. Responder: Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -1440
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "85fc6bde-3b94-45e0-85ab-5db7c2e12be9",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "image",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9781a11c-0e32-43af-ba4f-097fd15fc9c5",
+      "name": "3. TEM FOTO?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        -736
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $('1. Validar e Processar').first().json.conversationId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d7b4bfa7-0108-4494-bd13-622b35d61241",
+      "name": "4a. Buscar Conversa (FOTO)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1632,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/patients/{{ $('1. Validar e Processar').first().json.patientId }}/diet",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bf2c7c64-a26e-4c6f-9cc3-781b9e2c6851",
+      "name": "5a. Buscar Dieta (FOTO)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1408,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('1. Validar e Processar').first().json.attachments[0].url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "33af498c-6452-4203-a457-05fc0f8f881a",
+      "name": "6a-1. Baixar Imagem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1200,
+        -944
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Converter imagem para base64\nconst binaryData = $input.first().binary;\n\nconsole.log('=== CONVERTENDO IMAGEM ===');\nconsole.log('Binary data keys:', Object.keys(binaryData));\n\n// Pegar primeiro binary data\nconst imageKey = Object.keys(binaryData)[0];\nconst imageData = binaryData[imageKey];\n\nconsole.log('Image key:', imageKey);\nconsole.log('MIME type:', imageData.mimeType);\nconsole.log('File size:', imageData.fileSize);\n\n// Converter para base64\nconst base64 = imageData.data;\n\nconsole.log('Base64 length:', base64.length);\n\nreturn {\n  json: {\n    imageBase64: base64,\n    mimeType: imageData.mimeType,\n    fileName: imageData.fileName\n  }\n};"
+      },
+      "id": "bbf5a39d-8d21-4732-95ca-02a23e7d1140",
+      "name": "6a-2. Converter para Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -992
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Você é um nutricionista especializado em análise de alimentos por imagem.\\n\\nANALISE A FOTO DA REFEIÇÃO e retorne APENAS JSON válido (sem markdown, sem ```json):\\n\\n{\\n  \\\"alimentos\\\": [\\n    {\\n      \\\"nome\\\": \\\"Nome do alimento\\\",\\n      \\\"peso_gramas\\\": 150,\\n      \\\"confianca\\\": \\\"alta|media|baixa\\\",\\n      \\\"macros\\\": {\\n        \\\"proteinas\\\": 45.0,\\n        \\\"carboidratos\\\": 0.0,\\n        \\\"gorduras\\\": 3.5,\\n        \\\"calorias\\\": 220\\n      }\\n    }\\n  ],\\n  \\\"macros_totais\\\": {\\n    \\\"proteinas\\\": 47.5,\\n    \\\"carboidratos\\\": 23.0,\\n    \\\"gorduras\\\": 4.0,\\n    \\\"calorias\\\": 330\\n  },\\n  \\\"observacoes\\\": \\\"Breve observação sobre a refeição\\\"\\n}\\n\\nINSTRUÇÕES:\\n1. Identifique TODOS os alimentos visíveis\\n2. Estime peso em GRAMAS (use referências visuais: talheres, pratos, mãos)\\n3. Calcule macros baseado em tabela TACO/USDA\\n4. Seja preciso mas realista nas estimativas\\n5. Se não conseguir identificar algo, marque confiança como \\\"baixa\\\"\\n6. RETORNE APENAS O JSON, SEM TEXTO ADICIONAL\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"data:{{ $('6a-2. Converter para Base64').first().json.mimeType }};base64,{{ $('6a-2. Converter para Base64').first().json.imageBase64 }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 2000,\n  \"temperature\": 0.3\n}",
+        "options": {}
+      },
+      "id": "35f99b7d-1367-40dc-bca5-42c61eb4db93",
+      "name": "6a. Analisar Foto (Vision)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -736,
+        -992
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "fAe6rjFEnsEKA5I8",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse resposta do GPT-4o Vision\nconst currentItem = $('1. Validar e Processar').first().json;\nconst apiResponse = $input.first().json;\n\nconsole.log('=== RESPOSTA API VISION ===');\nconsole.log(JSON.stringify(apiResponse, null, 2));\n\n// Extrair conteúdo da resposta\nconst aiResponse = apiResponse.choices?.[0]?.message?.content || '{}';\n\nconsole.log('=== CONTEÚDO ===');\nconsole.log(aiResponse);\n\nlet parsed;\ntry {\n  // Remover markdown se houver\n  let jsonText = aiResponse.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  // Tentar extrair JSON\n  const jsonMatch = jsonText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('JSON não encontrado na resposta');\n  }\n} catch (error) {\n  console.error('Erro ao fazer parse da análise da foto:', error);\n  parsed = {\n    alimentos: [],\n    macros_totais: { proteinas: 0, carboidratos: 0, gorduras: 0, calorias: 0 },\n    observacoes: 'Erro ao analisar foto: ' + error.message\n  };\n}\n\nconsole.log('=== PARSED FOTO ===');\nconsole.log(JSON.stringify(parsed, null, 2));\n\nreturn {\n  json: {\n    ...currentItem,\n    analise_foto: parsed\n  }\n};"
+      },
+      "id": "ccf2d0b6-75d6-468c-b312-119265df777c",
+      "name": "7a. Parse Análise Foto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Comparar alimentos identificados com dieta/macros do paciente\nconst analysisData = $('7a. Parse Análise Foto').first().json;\nconst contextData = $input.first().json;\n\nconsole.log('=== COMPARANDO COM DIETA/MACROS ===');\nconsole.log('Diet source:', contextData.dietSource);\nconsole.log('Diet plan:', JSON.stringify(contextData.dietPlan, null, 2));\n\nconst dietSource = contextData.dietSource; // 'prescribed' ou 'profile'\nconst dietPlan = contextData.dietPlan || {};\nconst identifiedFoods = analysisData.alimentos || [];\n\nlet comparisonResult = {\n  dietSource: dietSource,\n  totalFoods: identifiedFoods.length,\n  approvedFoods: [],\n  unapprovedFoods: [],\n  adherencePercentage: 0,\n  totalMacros: analysisData.macros_totais || {\n    proteinas: 0,\n    carboidratos: 0,\n    gorduras: 0,\n    calorias: 0\n  },\n  dailyMacros: {\n    protein: dietPlan.dailyProtein || 0,\n    carbs: dietPlan.dailyCarbs || 0,\n    fats: dietPlan.dailyFats || 0,\n    calories: dietPlan.dailyCalories || 0\n  }\n};\n\n// Se tem dieta prescrita com refeições específicas\nif (dietSource === 'prescribed' && dietPlan.meals && dietPlan.meals.length > 0) {\n  console.log('📋 Comparando com dieta prescrita (refeições específicas)');\n  \n  // Extrair todos os alimentos da dieta\n  const dietFoods = [];\n  dietPlan.meals.forEach(meal => {\n    if (meal.foods && Array.isArray(meal.foods)) {\n      meal.foods.forEach(food => {\n        dietFoods.push(food.name.toLowerCase().trim());\n      });\n    }\n  });\n  \n  console.log('Alimentos na dieta:', dietFoods);\n  \n  // Comparar cada alimento identificado\n  identifiedFoods.forEach(food => {\n    const foodName = food.nome.toLowerCase().trim();\n    const isApproved = dietFoods.some(dietFood => \n      foodName.includes(dietFood) || dietFood.includes(foodName)\n    );\n    \n    if (isApproved) {\n      comparisonResult.approvedFoods.push(food.nome);\n    } else {\n      comparisonResult.unapprovedFoods.push(food.nome);\n    }\n  });\n  \n  // Calcular aderência\n  if (comparisonResult.totalFoods > 0) {\n    comparisonResult.adherencePercentage = Math.round(\n      (comparisonResult.approvedFoods.length / comparisonResult.totalFoods) * 100\n    );\n  }\n  \n} else if (dietSource === 'profile') {\n  console.log('👤 Usando macros do perfil (sem refeições específicas)');\n  \n  // Quando não tem dieta específica, não podemos comparar alimentos\n  // Mas podemos comparar macros da refeição com macros diários\n  comparisonResult.approvedFoods = identifiedFoods.map(f => f.nome);\n  comparisonResult.unapprovedFoods = [];\n  comparisonResult.adherencePercentage = 100; // Não há lista para comparar\n  \n  // Adicionar análise de macros\n  const mealProtein = comparisonResult.totalMacros.proteinas || 0;\n  const mealCarbs = comparisonResult.totalMacros.carboidratos || 0;\n  const mealFats = comparisonResult.totalMacros.gorduras || 0;\n  const mealCalories = comparisonResult.totalMacros.calorias || 0;\n  \n  const dailyProtein = comparisonResult.dailyMacros.protein || 0;\n  const dailyCarbs = comparisonResult.dailyMacros.carbs || 0;\n  const dailyFats = comparisonResult.dailyMacros.fats || 0;\n  const dailyCalories = comparisonResult.dailyMacros.calories || 0;\n  \n  // Calcular % do dia que essa refeição representa\n  comparisonResult.macrosPercentage = {\n    protein: dailyProtein > 0 ? Math.round((mealProtein / dailyProtein) * 100) : 0,\n    carbs: dailyCarbs > 0 ? Math.round((mealCarbs / dailyCarbs) * 100) : 0,\n    fats: dailyFats > 0 ? Math.round((mealFats / dailyFats) * 100) : 0,\n    calories: dailyCalories > 0 ? Math.round((mealCalories / dailyCalories) * 100) : 0\n  };\n  \n  console.log('Macros da refeição vs diários:', comparisonResult.macrosPercentage);\n}\n\nconsole.log('✅ Comparação concluída');\nconsole.log('Aderência:', comparisonResult.adherencePercentage + '%');\nconsole.log('Aprovados:', comparisonResult.approvedFoods.length);\nconsole.log('Não aprovados:', comparisonResult.unapprovedFoods.length);\n\nreturn {\n  json: {\n    ...contextData,\n    comparison: comparisonResult,\n    analysisData: analysisData\n  }\n};"
+      },
+      "id": "03d6c886-8928-4f46-be5c-25d61877203e",
+      "name": "8a. Comparar com Dieta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construir contexto para resposta inteligente\nconst currentItem = $input.first().json;\nconst dietPlan = $('5a. Buscar Dieta (FOTO)').first().json;\nconst conversation = $('4a. Buscar Conversa (FOTO)').first().json;\nconst analiseFoto = currentItem.analysisData;\nconst comparacao = currentItem.comparison;\n\nconst context = `\nVocê é um assistente nutricional do NutriBuddy.\n\nO PACIENTE ${conversation.patientName || 'Paciente'} ENVIOU FOTO DA REFEIÇÃO.\n\nANÁLISE DA FOTO:\n${JSON.stringify(analiseFoto, null, 2)}\n\nCOMPARAÇÃO COM DIETA PRESCRITA:\n- Aderência: ${comparacao.adherencePercentage}%\n- Alimentos aprovados: ${comparacao.approvedFoods.length}/${comparacao.totalFoods}\n- Alimentos aprovados: ${JSON.stringify(comparacao.approvedFoods)}\n- Alimentos NÃO aprovados: ${JSON.stringify(comparacao.unapprovedFoods)}\n\nMACROS DA REFEIÇÃO:\n- Proteínas: ${comparacao.totalMacros.proteinas}g\n- Carboidratos: ${comparacao.totalMacros.carboidratos}g\n- Gorduras: ${comparacao.totalMacros.gorduras}g\n- Calorias: ${comparacao.totalMacros.calorias} kcal\n\nMACROS DIÁRIOS PRESCRITOS:\n- Proteínas: ${comparacao.dailyMacros.protein}g\n- Carboidratos: ${comparacao.dailyMacros.carbs}g\n- Gorduras: ${comparacao.dailyMacros.fats}g\n- Calorias: ${comparacao.dailyMacros.calories} kcal\n\nFONTE DOS DADOS: ${comparacao.dietSource === 'prescribed' ? 'Dieta Prescrita' : 'Macros do Perfil'}\n\n${comparacao.dietSource === 'prescribed' ? `\nINSTRUÇÕES (DIETA PRESCRITA):\n- Se aderência >= 80%: Parabenize com entusiasmo! Mencione cada alimento com peso e macros.\n- Se aderência < 80%: Seja gentil mas alerte. Mencione alimentos não prescritos e sugira alternativas da dieta.\n` : `\nINSTRUÇÕES (MACROS DO PERFIL):\n- O paciente NÃO tem dieta prescrita ainda\n- Compare macros da refeição com macros diários\n- Esta refeição representa: ${comparacao.macrosPercentage?.protein || 0}% proteína, ${comparacao.macrosPercentage?.carbs || 0}% carbo, ${comparacao.macrosPercentage?.fats || 0}% gordura do dia\n- Avalie se está equilibrada\n- Dê feedback educativo\n- Sugira consultar nutricionista para plano personalizado\n`}\n\nDIRETRIZES:\n- Máximo 150 palavras\n- Use 2-4 emojis contextuais\n- Tom amigável e motivador\n- Seja específico (mencione pesos e macros)\n- Estrutura: Abertura → Análise → Feedback → Motivação\n\nGERE UMA RESPOSTA INTELIGENTE E PERSONALIZADA:\n`;\n\nreturn {\n  json: {\n    ...currentItem,\n    context: context\n  }\n};"
+      },
+      "id": "80ed7f38-6e19-437e-8690-f751fb4a1085",
+      "name": "9a. Construir Contexto Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.context }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.7
+        }
+      },
+      "id": "3087fb16-710c-491c-88d2-278641531275",
+      "name": "10a. IA Gera Resposta",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        -864
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse resposta final da IA\nconst currentItem = $('9a. Construir Contexto Resposta').first().json;\nconst aiResponse = $input.first().json.message?.content || $input.first().json.text || '{}';\n\nconsole.log('=== RESPOSTA FINAL IA ===');\nconsole.log(aiResponse);\n\nlet parsed;\ntry {\n  // Remover markdown\n  let jsonText = aiResponse.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  const jsonMatch = jsonText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('JSON não encontrado');\n  }\n} catch (error) {\n  console.error('Erro ao fazer parse da resposta:', error);\n  parsed = {\n    urgencia: 'baixa',\n    sentimento: 'positivo',\n    categoria: 'analise_refeicao',\n    deve_responder: true,\n    resposta: aiResponse\n  };\n}\n\nreturn {\n  json: {\n    ...currentItem,\n    urgencia: parsed.urgencia || 'baixa',\n    sentimento: parsed.sentimento || 'positivo',\n    categoria: parsed.categoria || 'analise_refeicao',\n    deve_responder: parsed.deve_responder !== false,\n    resposta: parsed.resposta || aiResponse\n  }\n};"
+      },
+      "id": "c3d07fd0-904c-4012-82fa-2ee2bfbea5d1",
+      "name": "11a. Parse Resposta Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $('11a. Parse Resposta Final').first().json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "senderId",
+              "value": "={{ $('11a. Parse Resposta Final').first().json.prescriberId }}"
+            },
+            {
+              "name": "senderRole",
+              "value": "prescriber"
+            },
+            {
+              "name": "content",
+              "value": "={{ $('11a. Parse Resposta Final').first().json.resposta }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "isAiGenerated",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd0bbf0d-2856-4a2e-aba1-0c844f2ca3cc",
+      "name": "12a. Enviar Resposta (FOTO)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/patients/{{ $('1. Validar e Processar').first().json.patientId }}/profile-macros",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ce719d60-b957-4182-892d-578d49607256",
+      "name": "5b. Buscar Macros Perfil (FALLBACK)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1408,
+        -1328
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verificar se tem dieta prescrita ou usar macros do perfil\nconst dietResponse = $input.first().json;\n\nconsole.log('=== VERIFICANDO DIETA ===');\nconsole.log('Diet response:', JSON.stringify(dietResponse, null, 2));\n\n// Verificar se tem dieta ativa\nconst hasDiet = dietResponse.data && \n                dietResponse.data.meals && \n                Array.isArray(dietResponse.data.meals) && \n                dietResponse.data.meals.length > 0;\n\nconsole.log('Has diet?', hasDiet);\n\nreturn {\n  json: {\n    hasDiet: hasDiet,\n    dietData: dietResponse.data || {}\n  }\n};"
+      },
+      "id": "40683e7b-3cb8-4df4-8dfb-2e9809dfd9ff",
+      "name": "5c. Tem Dieta Prescrita?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasDiet }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2b62e1bc-1360-4335-8859-25e717196ba6",
+      "name": "5d. IF: Tem Dieta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -912,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Usar dieta prescrita\nconst currentItem = $('1. Validar e Processar').first().json;\nconst dietData = $input.first().json.dietData;\n\nconsole.log('=== USANDO DIETA PRESCRITA ===');\n\nreturn {\n  json: {\n    ...currentItem,\n    dietSource: 'prescribed',\n    dietPlan: {\n      name: dietData.name || 'Dieta Prescrita',\n      description: dietData.description || '',\n      meals: dietData.meals || [],\n      dailyProtein: dietData.macros?.protein || 0,\n      dailyCarbs: dietData.macros?.carbs || 0,\n      dailyFats: dietData.macros?.fats || 0,\n      dailyCalories: dietData.macros?.calories || 0\n    }\n  }\n};"
+      },
+      "id": "3086d736-2cf2-4ef7-8699-7bcf86d3d64d",
+      "name": "5e. Usar Dieta Prescrita",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -1216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Usar macros do perfil (fallback)\nconst currentItem = $('1. Validar e Processar').first().json;\nconst profileResponse = $('5b. Buscar Macros Perfil (FALLBACK)').first().json;\n\nconsole.log('=== USANDO MACROS DO PERFIL (FALLBACK) ===');\nconsole.log('Profile response:', JSON.stringify(profileResponse, null, 2));\n\nconst profileData = profileResponse.data || {};\n\nreturn {\n  json: {\n    ...currentItem,\n    dietSource: 'profile',\n    dietPlan: {\n      name: profileData.name || 'Macros do Perfil',\n      description: profileData.description || 'Macronutrientes baseados no perfil do paciente',\n      meals: [], // Sem refeições específicas\n      dailyProtein: profileData.macros?.protein || 0,\n      dailyCarbs: profileData.macros?.carbs || 0,\n      dailyFats: profileData.macros?.fats || 0,\n      dailyCalories: profileData.macros?.calories || 0,\n      patientInfo: profileData.patientInfo || {}\n    }\n  }\n};"
+      },
+      "id": "de8c382d-9bb0-43ff-abcd-96b6c4c29eed",
+      "name": "5f. Usar Macros do Perfil",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -1328
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $('1. Validar e Processar').first().json.conversationId }}/context",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { type: 'meal_logging', patientId: $('1. Validar e Processar').first().json.patientId, data: $('7a. Parse Análise Foto').first().json.analise_foto } }}",
+        "options": {}
+      },
+      "id": "9fe6b7bd-7a3c-4c0c-8226-9ea7452b13e2",
+      "name": "FASE2: 1. Criar Contexto Inicial",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        -576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $('1. Validar e Processar').first().json.conversationId }}/context",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "55466406-3d2a-4620-9db0-67cb9be9abe5",
+      "name": "FASE2: 2. Buscar Contexto Ativo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1632,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasContext }}",
+              "value2": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cdf5d0e7-6ec8-4813-af9b-6700d7126bab",
+      "name": "FASE2: 3. Tem Contexto Ativo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisar intenção do usuário quando há contexto ativo\nconst currentItem = $input.first().json;\nconst contextData = $('FASE2: 2. Buscar Contexto Ativo').first().json;\nconst userMessage = $('1. Validar e Processar').first().json.content.toLowerCase();\n\n// Palavras-chave para cada intenção\nconst keywords = {\n  correction: ['na verdade', 'não', 'errado', 'correto', 'correção', 'corrigir', 'são', 'peso', 'gramas', 'kg', 'metade', 'meio'],\n  addition: ['também', 'mais', 'além', 'comi', 'bebi', 'adicionar', 'incluir', 'tinha', 'tomei'],\n  confirmation: ['sim', 'confirmar', 'pode', 'registrar', 'salvar', 'ok', 'certo', 'isso mesmo', 'exato'],\n  cancellation: ['não', 'cancelar', 'esquecer', 'desistir', 'não quero', 'deixa pra lá']\n};\n\n// Detectar intenção\nlet intention = 'unknown';\nlet confidence = 0;\n\n// Verificar cada tipo de intenção\nfor (const [type, words] of Object.entries(keywords)) {\n  const matches = words.filter(word => userMessage.includes(word)).length;\n  const score = matches / words.length;\n  \n  if (score > confidence) {\n    confidence = score;\n    intention = type;\n  }\n}\n\n// Se confiança muito baixa, considerar como pergunta/dúvida\nif (confidence < 0.15) {\n  intention = 'question';\n}\n\nconsole.log('Intenção detectada:', intention, 'Confiança:', confidence);\n\nreturn {\n  json: {\n    conversationId: $('1. Validar e Processar').first().json.conversationId,\n    patientId: $('1. Validar e Processar').first().json.patientId,\n    context: contextData.context,\n    intention: {\n      type: intention,\n      confidence: confidence,\n      userMessage: $('1. Validar e Processar').first().json.content\n    }\n  }\n};"
+      },
+      "id": "d7552527-37ca-4cd9-9ac7-a7672289c089",
+      "name": "FASE2: 4. Analisar Intenção",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.intention.type }}",
+                    "value2": "correction"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.intention.type }}",
+                    "value2": "addition"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.intention.type }}",
+                    "value2": "confirmation"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.intention.type }}",
+                    "value2": "cancellation"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 4
+        }
+      },
+      "id": "22efbcf2-da0c-4d4f-8c57-649210546624",
+      "name": "FASE2: 5. Rotear por Intenção",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -960,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar correção de peso/quantidade\nconst currentItem = $input.first().json;\nconst context = currentItem.context;\nconst userMessage = currentItem.intention.userMessage;\n\nconsole.log('Processando correção:', userMessage);\n\n// Extrair números da mensagem (peso em gramas)\nconst numbers = userMessage.match(/\\d+/g);\nlet newWeight = null;\n\nif (numbers && numbers.length > 0) {\n  newWeight = parseInt(numbers[0]);\n  \n  // Se mencionou \"metade\", \"meio\", dividir por 2\n  if (userMessage.includes('metade') || userMessage.includes('meio')) {\n    newWeight = Math.round(newWeight / 2);\n  }\n}\n\nconsole.log('Novo peso detectado:', newWeight);\n\n// Atualizar contexto com novo peso\nconst updatedFoods = context.data.foods.map(food => {\n  const ratio = newWeight ? newWeight / food.weight : 1;\n  return {\n    ...food,\n    weight: newWeight || food.weight,\n    macros: {\n      protein: Math.round(food.macros.protein * ratio * 10) / 10,\n      carbs: Math.round(food.macros.carbs * ratio * 10) / 10,\n      fats: Math.round(food.macros.fats * ratio * 10) / 10,\n      calories: Math.round(food.macros.calories * ratio)\n    }\n  };\n});\n\n// Recalcular totais\nconst totalMacros = updatedFoods.reduce((acc, food) => ({\n  protein: acc.protein + food.macros.protein,\n  carbs: acc.carbs + food.macros.carbs,\n  fats: acc.fats + food.macros.fats,\n  calories: acc.calories + food.macros.calories\n}), { protein: 0, carbs: 0, fats: 0, calories: 0 });\n\nreturn {\n  json: {\n    conversationId: currentItem.conversationId,\n    action: 'update',\n    contextUpdate: {\n      data: {\n        ...context.data,\n        foods: updatedFoods,\n        totalMacros: {\n          protein: Math.round(totalMacros.protein * 10) / 10,\n          carbs: Math.round(totalMacros.carbs * 10) / 10,\n          fats: Math.round(totalMacros.fats * 10) / 10,\n          calories: Math.round(totalMacros.calories)\n        }\n      }\n    },\n    responseMessage: `Entendi! Atualizei para ${newWeight}g. \n\n📊 Macros recalculados:\n- Proteína: ${Math.round(totalMacros.protein)}g\n- Carboidratos: ${Math.round(totalMacros.carbs)}g\n- Gorduras: ${Math.round(totalMacros.fats)}g\n- Calorias: ${Math.round(totalMacros.calories)}\n\nTem mais alguma coisa nesta refeição? 🤔`\n  }\n};"
+      },
+      "id": "3b4aa273-0624-4716-ab40-c8e6299a0d66",
+      "name": "FASE2: 6a. Ação: Correção",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar adição de novo alimento\nconst currentItem = $input.first().json;\nconst context = currentItem.context;\nconst userMessage = currentItem.intention.userMessage;\n\nconsole.log('Processando adição:', userMessage);\n\n// Extrair alimento e peso da mensagem\nconst numbers = userMessage.match(/\\d+/g);\nconst weight = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 100;\n\n// Tentar identificar o alimento\nlet foodName = 'Alimento adicional';\nconst commonFoods = {\n  'arroz': { protein: 0.026, carbs: 0.28, fats: 0.003, calories: 1.3 },\n  'feijão': { protein: 0.09, carbs: 0.23, fats: 0.005, calories: 1.27 },\n  'frango': { protein: 0.31, carbs: 0, fats: 0.036, calories: 1.65 },\n  'carne': { protein: 0.26, carbs: 0, fats: 0.15, calories: 2.5 },\n  'peixe': { protein: 0.22, carbs: 0, fats: 0.05, calories: 1.2 },\n  'salada': { protein: 0.01, carbs: 0.03, fats: 0.002, calories: 0.2 },\n  'batata': { protein: 0.02, carbs: 0.17, fats: 0.001, calories: 0.77 },\n  'macarrão': { protein: 0.05, carbs: 0.25, fats: 0.009, calories: 1.31 }\n};\n\nlet macrosPer100g = { protein: 0.05, carbs: 0.25, fats: 0.02, calories: 1.5 };\n\nfor (const [food, macros] of Object.entries(commonFoods)) {\n  if (userMessage.includes(food)) {\n    foodName = food.charAt(0).toUpperCase() + food.slice(1);\n    macrosPer100g = macros;\n    break;\n  }\n}\n\n// Calcular macros do novo alimento\nconst newFood = {\n  name: foodName,\n  weight: weight,\n  macros: {\n    protein: Math.round(weight * macrosPer100g.protein * 10) / 10,\n    carbs: Math.round(weight * macrosPer100g.carbs * 10) / 10,\n    fats: Math.round(weight * macrosPer100g.fats * 10) / 10,\n    calories: Math.round(weight * macrosPer100g.calories)\n  }\n};\n\n// Adicionar ao contexto\nconst updatedFoods = [...context.data.foods, newFood];\n\n// Recalcular totais\nconst totalMacros = updatedFoods.reduce((acc, food) => ({\n  protein: acc.protein + food.macros.protein,\n  carbs: acc.carbs + food.macros.carbs,\n  fats: acc.fats + food.macros.fats,\n  calories: acc.calories + food.macros.calories\n}), { protein: 0, carbs: 0, fats: 0, calories: 0 });\n\nreturn {\n  json: {\n    conversationId: currentItem.conversationId,\n    action: 'update',\n    contextUpdate: {\n      data: {\n        ...context.data,\n        foods: updatedFoods,\n        totalMacros: {\n          protein: Math.round(totalMacros.protein * 10) / 10,\n          carbs: Math.round(totalMacros.carbs * 10) / 10,\n          fats: Math.round(totalMacros.fats * 10) / 10,\n          calories: Math.round(totalMacros.calories)\n        }\n      }\n    },\n    responseMessage: `Ótimo! Adicionei ${foodName} (${weight}g) à sua refeição. \n\n📊 Novo total:\n- Proteína: ${Math.round(totalMacros.protein)}g\n- Carboidratos: ${Math.round(totalMacros.carbs)}g\n- Gorduras: ${Math.round(totalMacros.fats)}g\n- Calorias: ${Math.round(totalMacros.calories)}\n\nTem mais alguma coisa? 🤔`\n  }\n};"
+      },
+      "id": "56c1edd4-1e41-483a-b7b7-205568d9c094",
+      "name": "FASE2: 6b. Ação: Adição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar dados para registro\nconst currentItem = $input.first().json;\nconst context = currentItem.context;\n\nconsole.log('Confirmando registro:', context.data);\n\nreturn {\n  json: {\n    conversationId: currentItem.conversationId,\n    patientId: currentItem.patientId,\n    action: 'confirm_and_save',\n    mealData: {\n      patientId: currentItem.patientId,\n      conversationId: currentItem.conversationId,\n      ...context.data\n    },\n    responseMessage: 'Perfeito! Registrando sua refeição... ✅'\n  }\n};"
+      },
+      "id": "0b13d7fb-a3ae-495f-b9fd-1187c16b9b89",
+      "name": "FASE2: 6c. Ação: Confirmação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cancelar registro\nconst currentItem = $input.first().json;\n\nconsole.log('Cancelando registro');\n\nreturn {\n  json: {\n    conversationId: currentItem.conversationId,\n    action: 'cancel',\n    responseMessage: 'Tudo bem! Cancelei o registro. Se quiser registrar depois, é só me avisar! 😊'\n  }\n};"
+      },
+      "id": "486f9c1b-b213-411b-ad37-bf41f75015c1",
+      "name": "FASE2: 6d. Ação: Cancelamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $json.conversationId }}/context",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.contextUpdate) }}",
+        "options": {}
+      },
+      "id": "537ee02b-bcea-46df-9402-25e2b94ca5fa",
+      "name": "FASE2: 7. Atualizar Contexto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -512,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://nutribuddy.dog/api/n8n/meals/log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.mealData) }}",
+        "options": {}
+      },
+      "id": "9e46d12d-b9bc-4fa4-8758-9d0ff791dd82",
+      "name": "FASE2: 8. Registrar Refeição",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -512,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $json.conversationId }}/context",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11d8b2ca-219e-426e-8f55-0ae92a3d9a2a",
+      "name": "FASE2: 9. Deletar Contexto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -288,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://nutribuddy.dog/api/n8n/conversations/{{ $json.conversationId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { role: 'assistant', content: $json.responseMessage } }}",
+        "options": {}
+      },
+      "id": "642f687b-19a9-4135-8c3b-8eb1d2d9aea9",
+      "name": "FASE2: 10. Enviar Resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, action: $json.action || 'response_sent' } }}",
+        "options": {}
+      },
+      "id": "8f9edab5-d0c3-4c4a-ad8e-3181368ed843",
+      "name": "FASE2: 11. Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        160,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "audio-check-1",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b57da995-3c4b-4203-82b3-be6042ae3097",
+      "name": "2a. TEM ÁUDIO?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2112,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.attachments[0].url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "443593d1-6dae-4d80-87d9-1f117ec5fe7d",
+      "name": "AUDIO: 1. Baixar Arquivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1856,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transcrever áudio usando Whisper da OpenAI\nconst currentItem = $('1. Validar e Processar').first().json;\nconst audioData = $input.first().binary;\n\nconsole.log('=== TRANSCREVENDO ÁUDIO ===');\nconsole.log('Audio data:', audioData);\n\n// Preparar dados para Whisper\n// O node HTTP Request já baixou o áudio como binary data\n// Agora vamos enviar para a API do Whisper\n\nreturn {\n  json: {\n    ...currentItem,\n    audioFile: audioData,\n    audioUrl: currentItem.attachments[0].url\n  },\n  binary: audioData\n};"
+      },
+      "id": "3be663bf-c9c1-4a5b-9883-a60b5c8631df",
+      "name": "AUDIO: 2. Preparar para Whisper",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse transcrição do manus-speech-to-text\nconst currentItem = $('1. Validar e Processar').first().json;\nconst commandOutput = $input.first().json;\n\nconsole.log('=== TRANSCRIÇÃO RECEBIDA ===');\nconsole.log('Command output:', commandOutput);\n\n// A transcrição vem no stdout do comando\nconst transcricao = commandOutput.stdout ? commandOutput.stdout.trim() : '';\n\nconsole.log('Transcrição:', transcricao);\n\n// Atualizar content com a transcrição\nreturn {\n  json: {\n    ...currentItem,\n    content: transcricao,\n    originalContent: currentItem.content,\n    type: 'text',\n    isTranscribed: true\n  }\n};\n"
+      },
+      "id": "512ab7f6-afee-49a8-9aab-396e32456295",
+      "name": "AUDIO: 4. Parse Transcrição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=={{ '/tmp/audio-' + $now.toUnixInteger() + '.webm' }}",
+        "options": {
+          "append": false
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1552,
+        320
+      ],
+      "id": "c314483f-2879-4704-9d93-420cd52504e4",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "command": "=manus-speech-to-text {{ $json.filePath }}\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1408,
+        320
+      ],
+      "id": "a28bae0a-0af2-4cde-a26f-8fd07813c1be",
+      "name": "AUDIO: 3b. Transcrever"
+    },
+    {
+      "parameters": {
+        "url": "=https://nutribuddy.dog/api/n8n/knowledge-base/search?query={{ encodeURIComponent($('1. Validar e Processar').first().json.content) }}&limit=3",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "buscar-conhecimento",
+      "name": "4b. Buscar Base de Conhecimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1632,
+        128
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook: Nova Mensagem": {
+      "main": [
+        [
+          {
+            "node": "1. Validar e Processar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validar e Processar": {
+      "main": [
+        [
+          {
+            "node": "2. Foi Filtrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Foi Filtrado?": {
+      "main": [
+        [
+          {
+            "node": "Responder: Filtrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2a. TEM ÁUDIO?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Buscar Conversa": {
+      "main": [
+        [
+          {
+            "node": "4. Buscar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Buscar Histórico": {
+      "main": [
+        [
+          {
+            "node": "5. Buscar Dieta do Paciente",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "4b. Buscar Base de Conhecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Buscar Dieta do Paciente": {
+      "main": [
+        [
+          {
+            "node": "6. Construir Contexto IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Construir Contexto IA": {
+      "main": [
+        [
+          {
+            "node": "7. Análise IA (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Análise IA (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "8. Parse Análise IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Parse Análise IA": {
+      "main": [
+        [
+          {
+            "node": "9. Deve Responder?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Deve Responder?": {
+      "main": [
+        [
+          {
+            "node": "10. Enviar Auto-resposta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Não Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Enviar Auto-resposta": {
+      "main": [
+        [
+          {
+            "node": "12. Responder: Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. TEM FOTO?": {
+      "main": [
+        [
+          {
+            "node": "4a. Buscar Conversa (FOTO)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4a. Buscar Conversa (FOTO)": {
+      "main": [
+        [
+          {
+            "node": "5a. Buscar Dieta (FOTO)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5a. Buscar Dieta (FOTO)": {
+      "main": [
+        [
+          {
+            "node": "5c. Tem Dieta Prescrita?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6a. Analisar Foto (Vision)": {
+      "main": [
+        [
+          {
+            "node": "7a. Parse Análise Foto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7a. Parse Análise Foto": {
+      "main": [
+        [
+          {
+            "node": "8a. Comparar com Dieta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8a. Comparar com Dieta": {
+      "main": [
+        [
+          {
+            "node": "9a. Construir Contexto Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9a. Construir Contexto Resposta": {
+      "main": [
+        [
+          {
+            "node": "10a. IA Gera Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10a. IA Gera Resposta": {
+      "main": [
+        [
+          {
+            "node": "11a. Parse Resposta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11a. Parse Resposta Final": {
+      "main": [
+        [
+          {
+            "node": "12a. Enviar Resposta (FOTO)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12a. Enviar Resposta (FOTO)": {
+      "main": [
+        [
+          {
+            "node": "12. Responder: Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5c. Tem Dieta Prescrita?": {
+      "main": [
+        [
+          {
+            "node": "5d. IF: Tem Dieta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5d. IF: Tem Dieta?": {
+      "main": [
+        [
+          {
+            "node": "5e. Usar Dieta Prescrita",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5b. Buscar Macros Perfil (FALLBACK)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5b. Buscar Macros Perfil (FALLBACK)": {
+      "main": [
+        [
+          {
+            "node": "5f. Usar Macros do Perfil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5e. Usar Dieta Prescrita": {
+      "main": [
+        [
+          {
+            "node": "6a-1. Baixar Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5f. Usar Macros do Perfil": {
+      "main": [
+        [
+          {
+            "node": "6a-1. Baixar Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6a-1. Baixar Imagem": {
+      "main": [
+        [
+          {
+            "node": "6a-2. Converter para Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6a-2. Converter para Base64": {
+      "main": [
+        [
+          {
+            "node": "6a. Analisar Foto (Vision)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 1. Criar Contexto Inicial": {
+      "main": [
+        [
+          {
+            "node": "12a. Enviar Resposta (FOTO)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 2. Buscar Contexto Ativo": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 3. Tem Contexto Ativo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 3. Tem Contexto Ativo?": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 4. Analisar Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "4. Buscar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 4. Analisar Intenção": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 5. Rotear por Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 5. Rotear por Intenção": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 6a. Ação: Correção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FASE2: 6b. Ação: Adição",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FASE2: 6c. Ação: Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FASE2: 6d. Ação: Cancelamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 6a. Ação: Correção": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 7. Atualizar Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 6b. Ação: Adição": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 7. Atualizar Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 6c. Ação: Confirmação": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 8. Registrar Refeição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 8. Registrar Refeição": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 9. Deletar Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 6d. Ação: Cancelamento": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 9. Deletar Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 7. Atualizar Contexto": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 10. Enviar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 9. Deletar Contexto": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 10. Enviar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FASE2: 10. Enviar Resposta": {
+      "main": [
+        [
+          {
+            "node": "FASE2: 11. Responder Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2a. TEM ÁUDIO?": {
+      "main": [
+        [
+          {
+            "node": "AUDIO: 1. Baixar Arquivo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "3. Buscar Conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AUDIO: 1. Baixar Arquivo": {
+      "main": [
+        [
+          {
+            "node": "AUDIO: 2. Preparar para Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AUDIO: 2. Preparar para Whisper": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AUDIO: 4. Parse Transcrição": {
+      "main": [
+        [
+          {
+            "node": "3. Buscar Conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "AUDIO: 3b. Transcrever",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AUDIO: 3b. Transcrever": {
+      "main": [
+        [
+          {
+            "node": "AUDIO: 4. Parse Transcrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9ab367bc-02b3-4a44-91a1-65cda84ed5ac",
+  "meta": {
+    "instanceId": "74e8b5403fe2aa8e848ab2beeef5775e444b570b80ca64b0c23086fba645aced"
+  },
+  "id": "5uEuF3XBLC3TXhvN",
+  "tags": []
+}

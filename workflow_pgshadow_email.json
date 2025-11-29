@@ -1,0 +1,90 @@
+{
+  "name": "PGshadow - Processamento de Email",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "credentials": {
+        "imap": {
+          "id": "1",
+          "name": "Email IMAP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PGSHADOW_URL}}/api/trpc/api.processEmail",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "={{$env.PGSHADOW_USER_ID}}"
+            },
+            {
+              "name": "subject",
+              "value": "={{$json.subject}}"
+            },
+            {
+              "name": "body",
+              "value": "={{$json.textPlain || $json.textHtml}}"
+            },
+            {
+              "name": "from",
+              "value": "={{$json.from.address}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Enviar para PGshadow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "content": "✅ Email processado com sucesso!\n\nDe: {{$json.from}}\nAssunto: {{$json.subject}}\nEntradas adicionadas: {{$json.entriesAdded}}",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Log Sucesso",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "Enviar para PGshadow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar para PGshadow": {
+      "main": [
+        [
+          {
+            "node": "Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

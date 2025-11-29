@@ -1,0 +1,39 @@
+{
+  "name": "7. Análise IA (HTTP Request - SOLUÇÃO)",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.2,
+  "position": [-1040, -240],
+  "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/chat/completions",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+      "parameters": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "=Bearer {{ $credentials.openAiKey }}"
+        }
+      ]
+    },
+    "sendBody": true,
+    "contentType": "json",
+    "bodyParameters": {
+      "parameters": []
+    },
+    "specifyBody": "json",
+    "jsonBody": "={{ \n  JSON.stringify({\n    \"model\": \"gpt-4o\",\n    \"messages\": [\n      {\n        \"role\": \"system\",\n        \"content\": \"Você é um assistente nutricional especializado do NutriBuddy. Analise mensagens de pacientes e forneça respostas em JSON.\"\n      },\n      {\n        \"role\": \"user\",\n        \"content\": $json.context\n      }\n    ],\n    \"max_tokens\": 500,\n    \"temperature\": 0.7\n  })\n}}",
+    "options": {}
+  },
+  "credentials": {
+    "httpHeaderAuth": {
+      "id": "SUA_CREDENCIAL_AQUI",
+      "name": "OpenAI API Key"
+    }
+  }
+}

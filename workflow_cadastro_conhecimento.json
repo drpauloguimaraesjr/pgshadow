@@ -1,0 +1,126 @@
+{
+  "name": "📚 NutriBuddy - Cadastrar Base de Conhecimento",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutribuddy-cadastrar-conhecimento",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-cadastro",
+      "name": "Webhook: Cadastrar Consulta",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        240
+      ],
+      "webhookId": "nutribuddy-knowledge-input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validar e processar entrada de conhecimento\nconst body = $input.first().json.body || $input.first().json;\n\nconsole.log('📚 Cadastrando nova consulta de referência');\n\n// Validar campos obrigatórios\nconst required = ['pergunta', 'resposta', 'categoria'];\nconst missing = required.filter(field => !body[field]);\n\nif (missing.length > 0) {\n  throw new Error(`Campos obrigatórios faltando: ${missing.join(', ')}`);\n}\n\n// Estruturar dados\nreturn {\n  json: {\n    id: `kb_${Date.now()}`,\n    pergunta: String(body.pergunta).trim(),\n    resposta: String(body.resposta).trim(),\n    categoria: body.categoria,\n    tags: body.tags || [],\n    patientId: body.patientId || null,\n    prescriberId: body.prescriberId || null,\n    timestamp: new Date().toISOString(),\n    ativo: true\n  }\n};"
+      },
+      "id": "validar-entrada",
+      "name": "1. Validar Entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://nutribuddy.dog/api/n8n/knowledge-base",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "nutribuddy-secret-2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "salvar-banco",
+      "name": "2. Salvar no Banco",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: 'Consulta cadastrada com sucesso!', id: $json.id } }}",
+        "options": {}
+      },
+      "id": "responder-sucesso",
+      "name": "3. Responder Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        320,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Cadastrar Consulta": {
+      "main": [
+        [
+          {
+            "node": "1. Validar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Validar Entrada": {
+      "main": [
+        [
+          {
+            "node": "2. Salvar no Banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Salvar no Banco": {
+      "main": [
+        [
+          {
+            "node": "3. Responder Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-11-28T00:00:00.000Z",
+  "versionId": ""
+}
