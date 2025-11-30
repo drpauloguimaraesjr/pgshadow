@@ -1,20 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export function useAuth() {
-    const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Mock auth check
-        setTimeout(() => {
-            setUser({ name: "Demo User", email: "demo@example.com" });
-            setLoading(false);
-        }, 500);
-    }, []);
+    // Mock user - always authenticated for demo
+    const [user] = useState({ name: "Demo User", email: "demo@example.com" });
+    const loading = false;
 
     const logout = () => {
-        setUser(null);
-        window.location.href = "/login";
+        window.location.href = "/";
     };
 
     return { user, loading, logout };
