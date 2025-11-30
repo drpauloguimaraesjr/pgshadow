@@ -143,6 +143,45 @@ export default function Settings() {
                                 </div>
                             )}
                         </div>
+
+                        <div className="mt-8 pt-6 border-t">
+                            <h3 className="text-lg font-semibold mb-4">Documentação da API</h3>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-medium mb-2">Endpoint de Ingestão (n8n)</h4>
+                                    <div className="flex items-center gap-2">
+                                        <code className="flex-1 bg-muted p-2 rounded border font-mono text-sm">
+                                            POST {import.meta.env.VITE_API_URL || "https://pgshadow-production.up.railway.app"}/api/external/ingest
+                                        </code>
+                                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(`${import.meta.env.VITE_API_URL || "https://pgshadow-production.up.railway.app"}/api/external/ingest`)}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-medium mb-2">Headers</h4>
+                                    <div className="bg-muted p-3 rounded border font-mono text-sm">
+                                        Content-Type: application/json<br />
+                                        X-API-KEY: &lt;sua-chave-api&gt;
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-medium mb-2">Body (JSON)</h4>
+                                    <pre className="bg-muted p-3 rounded border font-mono text-sm overflow-x-auto">
+                                        {`{
+  "question": "Como tratar diabetes tipo 2?",
+  "answer": "O tratamento inicial envolve mudanças no estilo de vida...",
+  "category": "Endocrinologia",
+  "tags": ["diabetes", "tratamento"],
+  "source": "n8n-workflow-123"
+}`}
+                                    </pre>
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

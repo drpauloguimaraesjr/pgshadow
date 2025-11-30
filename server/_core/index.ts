@@ -14,6 +14,10 @@ app.use(
     })
 );
 
+// External REST API
+import { externalRouter } from '../external';
+app.use('/api/external', externalRouter);
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
