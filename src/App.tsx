@@ -11,6 +11,7 @@ import Search from "./pages/Search";
 import Categories from "./pages/Categories";
 
 import Settings from "./pages/Settings";
+import PlaudIntegration from "./pages/PlaudIntegration";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -22,6 +23,7 @@ function Router() {
       <Route path={"/search"} component={Search} />
       <Route path={"/categories"} component={Categories} />
       <Route path={"/settings"} component={Settings} />
+      <Route path={"/plaud"} component={PlaudIntegration} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "../../shared/const";
+import { COOKIE_NAME } from "./_core/constants";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
@@ -8,11 +8,13 @@ import { storagePut } from "./storage";
 import { invokeLLM } from "./_core/llm";
 
 import { apiKeysRouter } from "./routers/apiKeys";
+import { plaudRouter } from "./routers/plaud";
 
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   apiKeys: apiKeysRouter,
+  plaud: plaudRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
