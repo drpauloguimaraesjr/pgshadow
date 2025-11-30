@@ -106,3 +106,23 @@ export const transcriptions = pgTable("transcriptions", {
 
 export type Transcription = typeof transcriptions.$inferSelect;
 export type InsertTranscription = typeof transcriptions.$inferInsert;
+
+/**
+ * API Keys for external access (e.g., n8n integration)
+ */
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  keyHash: varchar("key_hash", { length: 64 }).notNull(),
+  prefix: varchar("prefix", { length: 10 }).notNull(), // First few chars for display
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  active: boolean("active").default(true).notNull(),
+}, (table) => ({
+  userIdx: index("idx_api_keys_user").on(table.userId),
+  keyHashIdx: index("idx_api_keys_hash").on(table.keyHash),
+}));
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;

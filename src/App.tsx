@@ -10,6 +10,8 @@ import Upload from "./pages/Upload";
 import Search from "./pages/Search";
 import Categories from "./pages/Categories";
 
+import Settings from "./pages/Settings";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -19,6 +21,7 @@ function Router() {
       <Route path={"/upload"} component={Upload} />
       <Route path={"/search"} component={Search} />
       <Route path={"/categories"} component={Categories} />
+      <Route path={"/settings"} component={Settings} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

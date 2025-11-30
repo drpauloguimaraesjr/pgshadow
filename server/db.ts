@@ -101,7 +101,7 @@ export async function createKnowledgeEntry(entry: InsertKnowledgeEntry) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(knowledgeEntries).values(entry);
+  const result = await db.insert(knowledgeEntries).values(entry).returning();
   return result;
 }
 
@@ -203,7 +203,7 @@ export async function createCategory(category: InsertCategory) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  return await db.insert(categories).values(category);
+  return await db.insert(categories).values(category).returning();
 }
 
 export async function getCategories(userId: number) {
@@ -223,7 +223,7 @@ export async function createTranscription(transcription: InsertTranscription) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  return await db.insert(transcriptions).values(transcription);
+  return await db.insert(transcriptions).values(transcription).returning();
 }
 
 export async function getTranscriptions(userId: number) {
