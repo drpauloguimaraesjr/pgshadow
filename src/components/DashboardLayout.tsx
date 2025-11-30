@@ -93,9 +93,11 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider
+      defaultOpen={!isMobile}
       style={
         {
           "--sidebar-width": `${sidebarWidth}px`,
+          "--sidebar-width-mobile": "280px",
         } as CSSProperties
       }
     >
@@ -105,6 +107,8 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
+
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
@@ -251,22 +255,25 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset>
+      <SidebarInset className="flex flex-col">
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
-              </div>
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {activeMenuItem?.icon && (
+                <activeMenuItem.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <span className="font-semibold truncate">
+                {activeMenuItem?.label ?? "PGShadow"}
+              </span>
             </div>
-          </div>
+          </header>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 overflow-auto">
+          <div className="container max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
       </SidebarInset>
     </>
   );
