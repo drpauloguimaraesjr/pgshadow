@@ -2,8 +2,9 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { PlaudClient } from "../integrations/plaud";
 import { getDb } from "../db";
-import { knowledgeEntries } from "../schema";
+import { knowledgeEntries, promptTemplates } from "../schema";
 import { invokeLLM } from "../_core/llm";
+import { eq } from "drizzle-orm";
 
 export const plaudRouter = router({
     // Test connection with Plaud Note
@@ -50,6 +51,7 @@ export const plaudRouter = router({
             clientId: z.string(),
             secretKey: z.string(),
             fileId: z.string(),
+            templateId: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
             const client = new PlaudClient({
@@ -64,14 +66,70 @@ export const plaudRouter = router({
             }
 
             const text = file.transcription.text;
+            const db = await getDb();
+            if (!db) throw new Error("Database not available");
+
+            // Detect if it's an English class
+            const isEnglishClass = /\b(english|inglês|lesson|teacher|student|vocabulary|grammar)\b/i.test(file.name) ||
+                /\b(english|inglês|lesson|teacher|student)\b/i.test(text.substring(0, 500));
+
+            let systemPrompt: string;
+
+            if (input.templateId) {
+                // Use specified template
+                const [template] = await db
+                    .select()
+                    .from(promptTemplates)
+                    .where(eq(promptTemplates.id, input.templateId))
+                    .limit(1);
+
+                if (!template) throw new Error("Template not found");
+                systemPrompt = template.systemPrompt;
+            } else if (isEnglishClass) {
+                // Skip processing for English classes
+                await db.insert(knowledgeEntries).values({
+                    question: `Aula de Inglês: ${file.name}`,
+                    answer: text,
+                    category: "English",
+                    sourceType: "transcription",
+                    sourceFile: `plaud:${file.name}`,
+                    userId: ctx.user.id,
+                }).returning();
+
+                return {
+                    success: true,
+                    entriesCreated: 1,
+                    fileName: file.name,
+                    skipped: true,
+                    reason: "English class - saved as-is"
+                };
+            } else {
+                // Use default medical consultation prompt
+                systemPrompt = `Você é um assistente especializado em extrair informações de consultas médicas.
+Analise a transcrição fornecida e extraia pares de pergunta-resposta relevantes.
+Foque em:
+- Sintomas relatados pelo paciente
+- Diagnósticos dados pelo médico
+- Tratamentos e medicações prescritas
+- Orientações e recomendações
+- Exames solicitados
+
+Retorne um JSON com o seguinte formato:
+{
+  "entries": [
+    {
+      "question": "Pergunta ou tópico principal",
+      "answer": "Resposta detalhada ou informação relevante",
+      "category": "Categoria médica (ex: Cardiologia, Pediatria, etc)"
+    }
+  ]
+}`;
+            }
 
             // Use LLM to extract Q&A pairs
             const llmResponse = await invokeLLM({
                 messages: [
-                    {
-                        role: "system",
-                        content: `Extract question-answer pairs from medical consultations. Return JSON: {"entries": [{"question": "...", "answer": "...", "category": "..."}]}`
-                    },
+                    { role: "system", content: systemPrompt },
                     { role: "user", content: text }
                 ],
                 response_format: {
@@ -104,8 +162,6 @@ export const plaudRouter = router({
             });
 
             const extracted = JSON.parse(llmResponse.choices[0].message.content);
-            const db = await getDb();
-            if (!db) throw new Error("Database not available");
 
             let count = 0;
             for (const entry of extracted.entries) {
@@ -123,7 +179,8 @@ export const plaudRouter = router({
             return {
                 success: true,
                 entriesCreated: count,
-                fileName: file.name
+                fileName: file.name,
+                skipped: false
             };
         }),
 });
