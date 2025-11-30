@@ -1,13 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { auth, googleProvider } from "@/lib/firebase";
+import {
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged,
+    User as FirebaseUser
+} from "firebase/auth";
+
+interface User {
+    name: string;
+    email: string;
+    photoURL?: string;
+}
 
 export function useAuth() {
-    // Mock user - always authenticated for demo
-    const [user] = useState({ name: "Demo User", email: "demo@example.com" });
-    const loading = false;
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const logout = () => {
-        window.location.href = "/";
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+            if (firebaseUser) {
+                setUser({
+                    name: firebaseUser.displayName || "User",
+                    email: firebaseUser.email || "",
+                    photoURL: firebaseUser.photoURL || undefined,
+                });
+            } else {
+                setUser(null);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const loginWithGoogle = async () => {
+        try {
+            await signInWithPopup(auth, googleProvider);
+        } catch (error) {
+            console.error("Error signing in with Google:", error);
+        }
     };
 
-    return { user, loading, logout };
+    const logout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    };
+
+    return { user, loading, loginWithGoogle, logout };
 }
